@@ -1,0 +1,45 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<!DOCTYPE favorite_books [
+  <!ELEMENT favorite_books (book+)>
+  <!ELEMENT book (title,authors,series,book_number,release_year,pages)>
+  <!ELEMENT title (#PCDATA)>
+  <!ELEMENT authors (author+)>
+  <!ELEMENT author (#PCDATA)>
+  <!ELEMENT series (#PCDATA)>
+  <!ELEMENT book_number (#PCDATA)>
+  <!ELEMENT release_year (#PCDATA)>
+  <!ELEMENT pages (#PCDATA)>
+]>
+<favorite_books>
+  <book id="1">
+    <title>The Waste Lands</title>
+    <authors>
+      <author>Stephen King</author>
+    </authors>
+    <series>The Dark Tower</series>
+    <book_number>3 of 7</book_number>
+    <release_year>1992</release_year>
+    <pages>422</pages>
+  </book>
+  <book id="2">
+    <title>The Hitchhiker's Guide to the Galaxy</title>
+    <authors>
+      <author>Douglas Adams</author>
+    </authors>
+    <series>The Hitchhiker's Guide to the Galaxy</series>
+    <book_number>1 of 5</book_number>
+    <release_year>1979</release_year>
+    <pages>144</pages>
+  </book>
+  <book id="3">
+    <title>Babylon's Ashes</title>
+    <authors>
+      <author>Daniel Abraham</author>
+      <author>Ty Franck</author>
+    </authors>
+    <series>The Expanse</series>
+    <book_number>7 of 9</book_number>
+    <release_year>2017</release_year>
+    <pages>540</pages>
+  </book>
+</favorite_books>

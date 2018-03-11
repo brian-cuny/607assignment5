@@ -1,0 +1,23 @@
+book:
+ - title : The Waste Lands
+   authors :
+    - Stephen King
+   series : The Dark Tower
+   book_number : 3 of 7
+   relase_year : 1992
+   pages : 422
+ - title: The Hitchhiker's Guide to the Galaxy
+   authors:
+    - Douglas Adams
+   series: The Hitchhiker's Guide to the Galaxy
+   book_number: 1 of 5
+   release_year: 1979
+   pages: 144
+ - title: Babylon's Ashes
+   authors:
+    - Daniel Abraham
+    - Ty Franck
+   series: The Expanse
+   book_number: 7 of 9
+   release_year: 2017
+   pages: 540
