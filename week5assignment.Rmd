@@ -1,0 +1,316 @@
+---
+output: html_document
+---
+
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+<link rel="stylesheet" href="./custom.css">
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(magrittr)
+library(jsonlite)
+library(yaml)
+library(XML)
+library(knitr)
+```
+
+<div class='jumbotron'>
+  <h2 class='display-3 text-uppercase'>week 5 Assignment</h2>
+  <h4 class='right text-uppercase'>By Brian Weinfeld</h4>
+  <div class='clearfix'></div>
+  <h5 class='right text-uppercase'>March 12, 2018</h5>
+</div>
+
+<div class='page-header text-uppercase'>
+  <h3>Set Up</h3>
+</div>
+
+<div class='well'>
+I began by creating a function to be used to process each of the data frames. I wanted to add a few extra steps by tidying to the project and help ensure uniformity in my data. 
+</div>
+
+```{r}
+Format.Raw.Data <- function(df){
+  df %>%
+    separate('book_number', c('book_number', 'series_length'), sep=' of ') %>%
+    map_df(~str_replace_all(., '^(The|A) (.*)','\\2, \\1')) %>%
+    arrange(title)
+}
+```
+
+<div class='page-header text-uppercase'>
+  <h3>Json</h3>
+</div>
+
+<pre>
+{"favorite_books":[
+  {
+    "title": "The Waste Lands",
+    "authors": ["Stephen King"],
+    "series": "The Dark Tower",
+    "book_number": "3 of 7",
+    "release_year": 1992,
+    "pages": 422
+  },
+  {
+    "title": "The Hitchhiker's Guide to the Galaxy",
+    "authors": ["Douglas Adams"],
+    "series": "The Hitchhiker's Guide to the Galaxy",
+    "book_number": "1 of 5",
+    "release_year": 1979,
+    "pages": 144
+  },
+  {
+    "title": "Babylon's Ashes",
+    "authors": ["Daniel Abraham", "Ty Franck"],
+    "series": "The Expanse",
+    "book_number": "7 of 9",
+    "release_year": 2017,
+    "pages": 540
+  }]
+}
+</pre>
+
+<div class='well'>
+The json data was simpliest to work with. It was read in and passed directly to the Format.Raw.Data function.
+</div>
+
+```{r}
+json.raw.data <- fromJSON('https://raw.githubusercontent.com/brian-cuny/607assignment5/master/authors.json')[[1]]
+
+json.data.frame <- json.raw.data %>%
+  Format.Raw.Data()
+json.data.frame %>% kable()
+```
+
+<div class='page-header text-uppercase'>
+  <h3>HTML</h3>
+</div>
+
+<pre>
+&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+  &lt;meta charset="UTF-8"&gt;
+  &lt;title&gt;My Favorite Authors&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;h1&gt;My Favorite Books!&lt;/h1&gt;
+  &lt;h2&gt;Check them out!&lt;/h2&gt;
+  &lt;p&gt;In the below table you will find a list of my favorite fiction books.&lt;/p&gt;
+  &lt;table id="books"&gt;
+    &lt;thead&gt;
+      &lt;tr&gt;
+        &lt;td id='title'&gt;Title&lt;/td&gt;
+        &lt;td id='authors'&gt;Authors&lt;/td&gt;
+        &lt;td id='series'&gt;Series&lt;/td&gt;
+        &lt;td id='book_number'&gt;Book Number&lt;/td&gt;
+        &lt;td id='release_year'&gt;Release Year&lt;/td&gt;
+        &lt;td id='pages'&gt;Pages&lt;/td&gt;
+      &lt;/tr&gt;
+    &lt;/thead&gt;
+    &lt;tbody&gt;
+      &lt;tr&gt;
+        &lt;td&gt;The Waste Lands&lt;/td&gt;
+        &lt;td&gt;Stephen King&lt;/td&gt;
+        &lt;td&gt;The Dark Tower&lt;/td&gt;
+        &lt;td&gt;3 of 7&lt;/td&gt;
+        &lt;td&gt;1992&lt;/td&gt;
+        &lt;td&gt;422&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+        &lt;td&gt;The Hitchhiker's Guide to the Galaxy&lt;/td&gt;
+        &lt;td&gt;Douglas Adams&lt;/td&gt;
+        &lt;td&gt;The Hitchhiker's Guide to the Galaxy&lt;/td&gt;
+        &lt;td&gt;1 of 5&lt;/td&gt;
+        &lt;td&gt;1979&lt;/td&gt;
+        &lt;td&gt;144&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+        &lt;td&gt;Babylon's Ashes&lt;/td&gt;
+        &lt;td&gt;Daniel Abraham, Ty Franck&lt;/td&gt;
+        &lt;td&gt;The Expanse&lt;/td&gt;
+        &lt;td&gt;6 of 9&lt;/td&gt;
+        &lt;td&gt;2017&lt;/td&gt;
+        &lt;td&gt;540&lt;/td&gt;
+      &lt;/tr&gt;
+    &lt;/tbody&gt;
+  &lt;/table&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</pre>
+
+<div class='well'>
+I created a function called Html.Trimmer designed to trim the excess white space around each value grabbed from the html.
+</div>
+
+```{r}
+Html.Trimmer <- function(value){
+  value %>%
+    xmlValue() %>%
+    str_trim()
+}
+```
+
+<div class='well'>
+The raw data was read in. I began by grabbing the id attributes that contained all the names for the eventual dataframe. Then I grabbed all the needed values, ordered them in a matrix and put them into a data frame before calling the Format.Raw.Data method.
+</div>
+
+```{r}
+html.raw.data <- htmlParse('C:\\Users\\Brian\\Desktop\\GradClasses\\Spring18\\607\\607assignment5\\authors.html')
+
+html.names <- html.raw.data %>%
+  xpathSApply('//table//thead//td', xmlGetAttr, 'id')
+
+html.data.frame <- html.raw.data %>%
+  xpathSApply('//table//tbody//td', Html.Trimmer) %>% 
+  matrix(ncol=html.names %>% length(), byrow=T) %>%
+  as.data.frame() %>%
+  setNames(html.names) %>%
+  Format.Raw.Data()
+html.data.frame %>% kable()
+```
+
+<div class='page-header text-uppercase'>
+  <h3>XML</h3>
+</div>
+
+<pre>
+&lt;?xml version='1.0' encoding='ISO-8859-1'?&gt;
+&lt;!DOCTYPE favorite_books [
+  &lt;!ELEMENT favorite_books (book+)&gt;
+  &lt;!ELEMENT book (title,authors,series,book_number,release_year,pages)&gt;
+  &lt;!ELEMENT title (#PCDATA)&gt;
+  &lt;!ELEMENT authors (author+)&gt;
+  &lt;!ELEMENT author (#PCDATA)&gt;
+  &lt;!ELEMENT series (#PCDATA)&gt;
+  &lt;!ELEMENT book_number (#PCDATA)&gt;
+  &lt;!ELEMENT release_year (#PCDATA)&gt;
+  &lt;!ELEMENT pages (#PCDATA)&gt;
+]&gt;
+&lt;favorite_books&gt;
+  &lt;book id="1"&gt;
+    &lt;title&gt;The Waste Lands&lt;/title&gt;
+    &lt;authors&gt;
+      &lt;author&gt;Stephen King&lt;/author&gt;
+    &lt;/authors&gt;
+    &lt;series&gt;The Dark Tower&lt;/series&gt;
+    &lt;book_number&gt;3 of 7&lt;/book_number&gt;
+    &lt;release_year&gt;1992&lt;/release_year&gt;
+    &lt;pages&gt;422&lt;/pages&gt;
+  &lt;/book&gt;
+  &lt;book id="2"&gt;
+    &lt;title&gt;The Hitchhiker's Guide to the Galaxy&lt;/title&gt;
+    &lt;authors&gt;
+      &lt;author&gt;Douglas Adams&lt;/author&gt;
+    &lt;/authors&gt;
+    &lt;series&gt;The Hitchhiker's Guide to the Galaxy&lt;/series&gt;
+    &lt;book_number&gt;1 of 5&lt;/book_number&gt;
+    &lt;release_year&gt;1979&lt;/release_year&gt;
+    &lt;pages&gt;144&lt;/pages&gt;
+  &lt;/book&gt;
+  &lt;book id="3"&gt;
+    &lt;title&gt;Babylon's Ashes&lt;/title&gt;
+    &lt;authors&gt;
+      &lt;author&gt;Daniel Abraham&lt;/author&gt;
+      &lt;author&gt;Ty Franck&lt;/author&gt;
+    &lt;/authors&gt;
+    &lt;series&gt;The Expanse&lt;/series&gt;
+    &lt;book_number&gt;7 of 9&lt;/book_number&gt;
+    &lt;release_year&gt;2017&lt;/release_year&gt;
+    &lt;pages&gt;540&lt;/pages&gt;
+  &lt;/book&gt;
+&lt;/favorite_books&gt;
+</pre>
+
+<div class='well'>
+I wrote a function designed to find lists of nodes (ie: multiple authors) and create a list of the elements. If there is only a single node, it returns it's value.
+</div>
+
+```{r}
+Xml.Processor <- function(value){
+  ifelse(value %>% xmlSize() > 1,
+    value %>% xmlChildren() %>% 
+             map(. %>% 
+                   xmlValue()
+                 ) %>% 
+             unlist() %>% 
+             list(),
+    value %>% xmlValue
+  )
+}
+```
+
+<div class='well'>
+Like with the HTML code, I created a names variable and then proccessed the xml file in a fashion similar to the html file.
+</div>
+
+```{r}
+xml.raw.data <- xmlParse('C:\\Users\\Brian\\Desktop\\GradClasses\\Spring18\\607\\607assignment5\\authors.xml')
+
+xml.names <- xml.raw.data %>%
+  xpathSApply('//book/*', xmlName) %>%
+  unique()
+
+xml.data.frame <- xml.raw.data %>%
+  xpathSApply('//book/*', Xml.Processor) %>% 
+  matrix(ncol=xml.names %>% length(), byrow=T) %>%
+  as.data.frame() %>%
+  setNames(xml.names) %>%
+  Format.Raw.Data()
+xml.data.frame %>% kable()
+```
+
+<div class='page-header text-uppercase'>
+  <h3>YAML</h3>
+</div>
+
+<pre>
+book:
+ - title : The Waste Lands
+   authors :
+    - Stephen King
+   series : The Dark Tower
+   book_number : 3 of 7
+   relase_year : 1992
+   pages : 422
+ - title: The Hitchhiker's Guide to the Galaxy
+   authors:
+    - Douglas Adams
+   series: The Hitchhiker's Guide to the Galaxy
+   book_number: 1 of 5
+   release_year: 1979
+   pages: 144
+ - title: Babylon's Ashes
+   authors:
+    - Daniel Abraham
+    - Ty Franck
+   series: The Expanse
+   book_number: 7 of 9
+   release_year: 2017
+   pages: 540
+</pre>
+
+<div class='well'>
+I decided to try working with YAML as well as I have never used the mark up language before and I wanted to see how it compared to HTML, XML and JSON. I followed a similar pattern as with the other formats by creating a names variable and then creating a data frame out of the list of information.
+</div>
+
+```{r}
+yaml.raw.data <- read_yaml('https://raw.githubusercontent.com/brian-cuny/607assignment5/master/authors.yaml')[[1]]
+
+yaml.names <- yaml.raw.data[[1]] %>% 
+  names() %>% 
+  unique()
+
+yaml.data.frame <- yaml.raw.data %>%
+  unlist(recursive=F) %>%
+  matrix(ncol=yaml.names %>% length(), byrow=T) %>%
+  as.data.frame() %>%
+  setNames(yaml.names) %>%
+  Format.Raw.Data()
+yaml.data.frame %>% kable()
+```
+
+<div class='alert alert-success'>
+All 4 input types have been successfully turned into data frames. The only difference amongst all the data frames is that while authors is a list in Json, XML and YAML it is a single value in HTML (seperated by a comma). The HTML could be modified further to bring it in line with the others if needed.
+</div>
